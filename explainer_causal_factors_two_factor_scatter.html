@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-factor causal misspecification — scatter widget</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f1f1f; --head: #000000; --muted: #5f6368;
+    --border: #e8eaed; --accent: #1a73e8; --accent-hover: #174ea6;
+    --red: #ea4335; --yellow: #fbbc04; --green: #34a853;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Google Sans","Google Sans Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size: 16px; line-height: 1.6; margin: 0; padding: 40px 16px;
+  }
+  code {
+    font-family: "Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size: 14px; background: #f8f9fa; border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px;
+  }
+  .sim {
+    border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px;
+    margin: 0 auto; width: min(94vw, 960px);
+  }
+  .sim-controls {
+    display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center;
+    margin-bottom: 16px; font-size: 13px; color: var(--muted);
+  }
+  .sim-controls label { display: flex; align-items: center; gap: 8px; }
+  .sim-controls input[type=range] { width: 96px; accent-color: var(--accent); }
+  .sim-controls .val {
+    font-family: "Roboto Mono",ui-monospace,monospace; color: var(--text);
+    min-width: 38px; text-align: right;
+  }
+  .sim-controls label.ctrl { font-weight: 600; color: var(--accent); flex-basis: 100%; }
+  .sim-stage { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+  .sim-stage .scatter-wrap { flex: 1 1 440px; min-width: 0; }
+  .sim-stage .dag-wrap { flex: 0 0 300px; }
+  #tf-scatter { width: 100%; max-width: 100%; height: auto; display: block; }
+  #tf-dag {
+    width: 100%; max-width: 300px; height: auto; display: block;
+    border: 1px solid var(--border); border-radius: 4px; background: #fff;
+  }
+  .dag-title {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .4px; margin: 0 0 6px;
+  }
+  .dag-caption { font-size: 12.5px; color: var(--text); margin-top: 10px; line-height: 1.45; }
+  .sim-readout {
+    margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px;
+  }
+  .sim-readout b { font-family: "Roboto Mono",ui-monospace,monospace; }
+  .sim-legend { display: inline-flex; align-items: center; gap: 7px; }
+  .sim-legend .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .sim-legend .bar { width: 18px; height: 0; border-top: 3px solid; display: inline-block; }
+  .sim-lesson { margin-top: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .sim-note { margin-top: 4px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+  .eqs { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+  .eqrow { display: flex; flex-direction: column; gap: 3px; }
+  .eqlab {
+    font-size: 11px; font-weight: 600; letter-spacing: .3px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .eqs code {
+    display: block; background: #f8f9fa; border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px 11px; font-size: 13px; line-height: 1.5;
+    white-space: normal;
+  }
+</style>
+</head>
+<body>
+
+<div class="sim">
+  <div class="sim-controls">
+    <label class="ctrl">F&#x2081; plays the role of:</label>
+    <label><input type="radio" name="tf-case" value="conf" checked> confounder (F&#x2081;&rarr;F&#x2082;, F&#x2081;&rarr;X)</label>
+    <label><input type="radio" name="tf-case" value="coll"> collider (F&#x2082;&rarr;F&#x2081;, X&rarr;F&#x2081;)</label>
+    <label class="ctrl"><input type="checkbox" id="p-ctl"> include F&#x2081; as a control in the regression</label>
+    <label>&#946; (F&#x2082;&rarr;X, true) <input type="range" id="p-b" min="0" max="2" step="0.05" value="1"><span class="val" id="p-b-v">1.00</span></label>
+    <label>a (F&#x2081; &harr; F&#x2082; strength) <input type="range" id="p-a" min="0" max="1.5" step="0.05" value="0.8"><span class="val" id="p-a-v">0.80</span></label>
+    <label>c (F&#x2081; &harr; X strength) <input type="range" id="p-c" min="-1" max="1.5" step="0.05" value="0.7"><span class="val" id="p-c-v">0.70</span></label>
+  </div>
+  <div class="sim-stage">
+    <div class="scatter-wrap">
+      <canvas id="tf-scatter" width="470" height="340"
+        role="img" aria-label="Scatter of the sample with the true-effect slope line (green) and the OLS-fit slope line (blue)"></canvas>
+    </div>
+    <div class="dag-wrap">
+      <div class="dag-title">Structure (live)</div>
+      <canvas id="tf-dag" width="300" height="240"
+        role="img" aria-label="Live DAG of F1 as confounder or collider of the F2 to X relationship"></canvas>
+      <div class="dag-caption" id="tf-cap"></div>
+    </div>
+  </div>
+  <div class="sim-readout">
+    <span class="sim-legend"><span class="bar" style="border-color:#34a853;border-top-style:dashed"></span>true effect &#946;: <b id="tf-true">--</b></span>
+    <span class="sim-legend"><span class="bar" style="border-color:#1a73e8"></span>OLS estimate of F&#x2082; (plim): <b id="tf-est">--</b></span>
+    <span>bias: <b id="tf-bias" style="color:#ea4335">--</b></span>
+    <span>verdict: <b id="tf-verdict">--</b></span>
+  </div>
+  <p class="sim-lesson" id="tf-lesson"></p>
+  <p class="sim-note" id="tf-note"></p>
+  <div class="eqs" id="tf-eqs"></div>
+</div>
+
+<script>
+(function () {
+  var plot = document.getElementById('tf-scatter');
+  if (!plot || !plot.getContext) return;
+  var pctx = plot.getContext('2d');
+  var dg = document.getElementById('tf-dag');
+  var dctx = (dg && dg.getContext) ? dg.getContext('2d') : null;
+  function val(id) { return parseFloat(document.getElementById(id).value); }
+  function setT(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
+  function ctl() { return document.getElementById('p-ctl').checked; }
+  function caseSel() { return document.querySelector('input[name="tf-case"]:checked').value; }
+
+  // ---- seeded sample (deterministic, seed 42) so the cloud is reproducible ----
+  var NPTS = 1200;
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function gaussians(n, seed) {
+    var r = mulberry32(seed), out = new Float64Array(n);
+    for (var i = 0; i < n; i++) {
+      var u1 = Math.max(r(), 1e-12), u2 = r();
+      out[i] = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+    return out;
+  }
+  // three independent unit-variance noise draws, fixed across slider moves
+  var Z1 = gaussians(NPTS, 42), Z2 = gaussians(NPTS, 1337), Z3 = gaussians(NPTS, 9001);
+
+  function sample(cse, b, a, c) {
+    var F1 = new Float64Array(NPTS), F2 = new Float64Array(NPTS), X = new Float64Array(NPTS);
+    for (var i = 0; i < NPTS; i++) {
+      if (cse === 'conf') {            // F1 -> F2, F1 -> X
+        F1[i] = Z1[i];
+        F2[i] = a * F1[i] + Z2[i];
+        X[i] = b * F2[i] + c * F1[i] + Z3[i];
+      } else {                          // collider: F2 -> F1 <- X
+        F2[i] = Z2[i];
+        X[i] = b * F2[i] + Z3[i];
+        F1[i] = a * F2[i] + c * X[i] + Z1[i];
+      }
+    }
+    return { F1: F1, F2: F2, X: X };
+  }
+
+  function fit(xs, ys) {
+    var n = xs.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (var i = 0; i < n; i++) { sx += xs[i]; sy += ys[i]; sxx += xs[i] * xs[i]; sxy += xs[i] * ys[i]; }
+    var mx = sx / n, my = sy / n, den = sxx - n * mx * mx;
+    var m = den !== 0 ? (sxy - n * mx * my) / den : 0;
+    return { m: m, k: my - m * mx, mx: mx, my: my };
+  }
+
+  // Points plotted: raw (F2, X) when not controlling; the added-variable plot
+  // (residuals after partialling out F1) when controlling, so the controlled
+  // coefficient is shown honestly as the slope through the residual cloud.
+  function plotData(c) {
+    var s = sample(c.cse, c.b, c.a, c.c);
+    if (!c.control) {
+      return { xs: s.F2, ys: s.X, xlab: 'F₂', ylab: 'X' };
+    }
+    var f2 = fit(s.F1, s.F2), xf = fit(s.F1, s.X);
+    var xs = new Float64Array(NPTS), ys = new Float64Array(NPTS);
+    for (var i = 0; i < NPTS; i++) {
+      xs[i] = s.F2[i] - (f2.m * s.F1[i] + f2.k);
+      ys[i] = s.X[i] - (xf.m * s.F1[i] + xf.k);
+    }
+    return { xs: xs, ys: ys, xlab: 'F₂ residual (after F₁)', ylab: 'X residual (after F₁)' };
+  }
+
+  // Population probability limit for the coefficient on F2 (unit-variance noises).
+  function estimate(cse, control, b, a, c) {
+    if (cse === 'conf') {
+      return control ? b : b + a * c / (a * a + 1);
+    }
+    if (!control) return b;
+    return (b - a * c) / (c * c + 1);   // exact closed form (SymPy-simplified)
+  }
+
+  function compute() {
+    var b = val('p-b'), a = val('p-a'), c = val('p-c');
+    var cse = caseSel(), control = ctl();
+    var est = estimate(cse, control, b, a, c);
+    return { b: b, a: a, c: c, cse: cse, control: control, est: est,
+             bias: est - b, correct: Math.abs(est - b) < 1e-9 };
+  }
+
+  function lesson(c) {
+    if (c.cse === 'conf') {
+      return c.control
+        ? 'F₁ is a confounder and you controlled for it. After partialling F₁ out of both axes, the OLS slope falls back onto the true effect. Controlling is the right call.'
+        : 'F₁ is a confounder left out. The blue OLS line is steeper than the true effect: the open backdoor F₂ ← F₁ → X tilts it up by a·c/(a²+1). You must control for it.';
+    }
+    return c.control
+      ? 'F₁ is a collider and you controlled for it. Partialling out the common effect tilts the OLS line away from the true slope, manufacturing bias. You must NOT control for it.'
+      : 'F₁ is a collider left out. The blue OLS line sits on the true effect: the path F₂ → F₁ ← X is closed at the collider. Leaving it out is the right call.';
+  }
+
+  function renderEqs(c) {
+    var el = document.getElementById('tf-eqs'); if (!el) return;
+    var b = c.b.toFixed(2), a = c.a.toFixed(2), cc = c.c.toFixed(2), est = c.est.toFixed(3);
+    var bs = (c.bias >= 0 ? '+' : '') + c.bias.toFixed(3);
+    var doeq = 'E[X | do(F₂=f)] = β·f = ' + b + '·f';
+    var scm, obsLab, obs, col;
+    if (c.cse === 'conf') {
+      scm = 'F₁ = η₁   ;   F₂ = ' + a + '·F₁ + η₂   ;   X = ' + b + '·F₂ + ' + cc + '·F₁ + ε';
+      if (c.control) {
+        obsLab = 'Observational, F₁ in the model (correctly specified)';
+        obs = 'partial slope of X on F₂ given F₁ = ' + b + ' = β';
+        col = '#34a853';
+      } else {
+        obsLab = 'Observational, F₁ omitted (misspecified)';
+        obs = 'slope of X on F₂ = β + a·c/(a²+1) = ' + est + '   →   biased by ' + bs;
+        col = '#ea4335';
+      }
+    } else {
+      scm = 'F₂ = η₂   ;   X = ' + b + '·F₂ + ε   ;   F₁ = ' + a + '·F₂ + ' + cc + '·X + η₁';
+      if (c.control) {
+        obsLab = 'Observational, F₁ in the model (misspecified: conditions on a collider)';
+        obs = 'partial slope = (β − a·c)/(c²+1) = ' + est + '   →   biased by ' + bs;
+        col = '#ea4335';
+      } else {
+        obsLab = 'Observational, F₁ omitted (correctly specified)';
+        obs = 'slope of X on F₂ = ' + b + ' = β';
+        col = '#34a853';
+      }
+    }
+    el.innerHTML =
+      '<div class="eqrow"><span class="eqlab">Structural causal model</span><code>' + scm + '</code></div>' +
+      '<div class="eqrow"><span class="eqlab">Causal target (do-calculus)</span><code>' + doeq + '</code></div>' +
+      '<div class="eqrow"><span class="eqlab" style="color:' + col + '">' + obsLab + '</span>' +
+      '<code style="border-color:' + col + '">' + obs + '</code></div>';
+  }
+
+  function draw() {
+    setT('p-b-v', val('p-b').toFixed(2));
+    setT('p-a-v', val('p-a').toFixed(2));
+    setT('p-c-v', val('p-c').toFixed(2));
+    var c = compute();
+    setT('tf-true', c.b.toFixed(3));
+    setT('tf-est', c.est.toFixed(3));
+    setT('tf-bias', (c.bias >= 0 ? '+' : '') + c.bias.toFixed(3));
+    var v = document.getElementById('tf-verdict');
+    if (v) { v.textContent = c.correct ? 'identified ✓' : 'biased ✗'; v.style.color = c.correct ? '#34a853' : '#ea4335'; }
+    setT('tf-lesson', lesson(c));
+    var sampleSlope = renderScatter(c);
+    setT('tf-note', 'Cloud: one sample of n = ' + NPTS + ' at seed 42. Dashed green line: true causal slope β = ' +
+      c.b.toFixed(2) + '. Solid line: the OLS fit to these points (slope ≈ ' + sampleSlope.toFixed(3) +
+      '), which converges to the population plim ' + c.est.toFixed(3) + ' shown above as n grows.');
+    renderDAG(c);
+    renderEqs(c);
+  }
+
+  function renderScatter(c) {
+    var d = plotData(c), xs = d.xs, ys = d.ys;
+    var W = plot.width, H = plot.height, mT = 16, mB = 44, mL = 52, mR = 16;
+    pctx.clearRect(0, 0, W, H);
+    var xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
+    for (var i = 0; i < xs.length; i++) {
+      if (xs[i] < xmin) xmin = xs[i]; if (xs[i] > xmax) xmax = xs[i];
+      if (ys[i] < ymin) ymin = ys[i]; if (ys[i] > ymax) ymax = ys[i];
+    }
+    var padx = (xmax - xmin) * 0.06 || 1, pady = (ymax - ymin) * 0.06 || 1;
+    xmin -= padx; xmax += padx; ymin -= pady; ymax += pady;
+    function sx(x) { return mL + (x - xmin) / (xmax - xmin) * (W - mL - mR); }
+    function sy(y) { return H - mB - (y - ymin) / (ymax - ymin) * (H - mT - mB); }
+
+    pctx.save();
+    pctx.beginPath(); pctx.rect(mL, mT, W - mL - mR, H - mT - mB); pctx.clip();
+    // zero gridlines
+    pctx.strokeStyle = '#eceef1'; pctx.lineWidth = 1;
+    if (0 >= xmin && 0 <= xmax) { pctx.beginPath(); pctx.moveTo(sx(0), mT); pctx.lineTo(sx(0), H - mB); pctx.stroke(); }
+    if (0 >= ymin && 0 <= ymax) { pctx.beginPath(); pctx.moveTo(mL, sy(0)); pctx.lineTo(W - mR, sy(0)); pctx.stroke(); }
+    // points
+    pctx.fillStyle = 'rgba(95,99,104,0.30)';
+    for (var j = 0; j < xs.length; j++) { pctx.beginPath(); pctx.arc(sx(xs[j]), sy(ys[j]), 1.7, 0, 6.2832); pctx.fill(); }
+    // lines: green = true effect (slope b through centroid); blue = OLS fit to points
+    var f = fit(xs, ys);
+    function seg(slope, intercept, color, dash) {
+      pctx.strokeStyle = color; pctx.lineWidth = 2.6; pctx.setLineDash(dash || []);
+      pctx.beginPath();
+      pctx.moveTo(sx(xmin), sy(slope * xmin + intercept));
+      pctx.lineTo(sx(xmax), sy(slope * xmax + intercept));
+      pctx.stroke(); pctx.setLineDash([]);
+    }
+    seg(c.b, f.my - c.b * f.mx, '#34a853', [7, 5]);            // true effect (dashed green)
+    seg(f.m, f.k, c.correct ? '#34a853' : '#1a73e8', []);       // OLS fit (solid)
+    pctx.restore();
+
+    // frame
+    pctx.strokeStyle = '#dadce0'; pctx.lineWidth = 1;
+    pctx.beginPath(); pctx.moveTo(mL, mT); pctx.lineTo(mL, H - mB); pctx.lineTo(W - mR, H - mB); pctx.stroke();
+    // slope labels
+    pctx.font = 'bold 12px "Roboto Mono",monospace'; pctx.textAlign = 'left';
+    pctx.fillStyle = '#188038';
+    pctx.fillText('β = ' + c.b.toFixed(2), mL + 8, mT + 16);
+    pctx.fillStyle = c.correct ? '#188038' : '#1a73e8';
+    pctx.fillText('OLS ≈ ' + f.m.toFixed(3), mL + 8, mT + 34);
+    // axis labels
+    pctx.fillStyle = '#5f6368'; pctx.font = '12px -apple-system,Arial,sans-serif'; pctx.textAlign = 'center';
+    pctx.fillText(d.xlab, mL + (W - mL - mR) / 2, H - 12);
+    pctx.save(); pctx.translate(15, mT + (H - mT - mB) / 2); pctx.rotate(-Math.PI / 2);
+    pctx.fillText(d.ylab, 0, 0); pctx.restore();
+    return f.m;
+  }
+
+  function arrow(x1, y1, x2, y2, color, blocked, label, lx, ly) {
+    if (!dctx) return;
+    var ang = Math.atan2(y2 - y1, x2 - x1);
+    dctx.strokeStyle = color; dctx.fillStyle = color; dctx.lineWidth = 2;
+    dctx.setLineDash(blocked ? [5, 4] : []);
+    dctx.beginPath(); dctx.moveTo(x1, y1); dctx.lineTo(x2, y2); dctx.stroke();
+    dctx.setLineDash([]);
+    dctx.beginPath(); dctx.moveTo(x2, y2);
+    dctx.lineTo(x2 - 9 * Math.cos(ang - 0.4), y2 - 9 * Math.sin(ang - 0.4));
+    dctx.lineTo(x2 - 9 * Math.cos(ang + 0.4), y2 - 9 * Math.sin(ang + 0.4));
+    dctx.closePath(); dctx.fill();
+    if (blocked) {
+      var mx = (x1 + x2) / 2, my = (y1 + y2) / 2, p = ang + Math.PI / 2, L = 6;
+      dctx.strokeStyle = '#202124'; dctx.lineWidth = 2.5;
+      dctx.beginPath();
+      dctx.moveTo(mx - Math.cos(p) * L, my - Math.sin(p) * L);
+      dctx.lineTo(mx + Math.cos(p) * L, my + Math.sin(p) * L);
+      dctx.stroke();
+    }
+    if (label) {
+      dctx.fillStyle = color; dctx.font = 'italic 12px Georgia,serif';
+      dctx.textAlign = 'center'; dctx.fillText(label, lx, ly);
+    }
+  }
+
+  function node(x, y, label, boxed, color) {
+    if (!dctx) return;
+    if (boxed) {
+      dctx.strokeStyle = '#202124'; dctx.lineWidth = 2; dctx.setLineDash([3, 2]);
+      dctx.strokeRect(x - 26, y - 26, 52, 52); dctx.setLineDash([]);
+    }
+    dctx.beginPath(); dctx.arc(x, y, 19, 0, 6.2832);
+    dctx.fillStyle = '#fff'; dctx.fill();
+    dctx.strokeStyle = color; dctx.lineWidth = 2; dctx.stroke();
+    dctx.fillStyle = '#202124'; dctx.font = 'italic 14px Georgia,serif';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText(label, x, y); dctx.textBaseline = 'alphabetic';
+  }
+
+  function renderDAG(c) {
+    if (!dctx) return;
+    var W = dg.width, H = dg.height;
+    dctx.clearRect(0, 0, W, H);
+    var RED = '#ea4335', GREEN = '#34a853', GREY = '#9aa0a6';
+    var box = c.control;
+    arrow(80, 172, 220, 172, GREEN, false, 'β', 150, 164);
+    if (c.cse === 'conf') {
+      var col = box ? GREY : RED;
+      arrow(136, 56, 74, 158, col, box, 'a', 88, 108);
+      arrow(164, 56, 226, 158, col, box, 'c', 212, 108);
+    } else {
+      var col2 = box ? RED : GREY;
+      arrow(74, 158, 136, 56, col2, false, 'a', 88, 108);
+      arrow(226, 158, 164, 56, col2, false, 'c', 212, 108);
+      if (box) {
+        dctx.strokeStyle = RED; dctx.setLineDash([4, 4]); dctx.lineWidth = 2;
+        dctx.beginPath();
+        dctx.moveTo(72, 188); dctx.bezierCurveTo(120, 222, 180, 222, 228, 188);
+        dctx.stroke(); dctx.setLineDash([]);
+        dctx.fillStyle = RED; dctx.font = 'italic 11px Georgia,serif';
+        dctx.textAlign = 'center'; dctx.fillText('spurious', 150, 214);
+      }
+    }
+    node(60, 172, 'F₂', false, '#1a73e8');
+    node(240, 172, 'X', false, '#202124');
+    node(150, 44, 'F₁', box, box ? '#202124' : '#1a73e8');
+    var cap = document.getElementById('tf-cap');
+    if (!cap) return;
+    if (c.cse === 'conf') {
+      cap.innerHTML = box
+        ? '<b style="color:#34a853">Backdoor closed.</b> F₁ (boxed) is controlled, so F₂ ← F₁ → X is blocked and the F₂ loading is identified.'
+        : '<b style="color:#ea4335">Open backdoor.</b> F₁ is an uncontrolled common cause of F₂ and X, so the F₂ estimate is biased.';
+    } else {
+      cap.innerHTML = box
+        ? '<b style="color:#ea4335">Collider opened.</b> Conditioning on F₁ (boxed) links F₂ and X spuriously, biasing the estimate.'
+        : '<b style="color:#34a853">Collider closed.</b> F₁ is a common effect left out, so no path opens and the F₂ estimate is clean.';
+    }
+  }
+
+  document.querySelectorAll('input[name="tf-case"]')
+    .forEach(function (r) { r.addEventListener('change', draw); });
+  document.getElementById('p-ctl').addEventListener('change', draw);
+  ['p-b', 'p-a', 'p-c'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', draw);
+  });
+  draw();
+})();
+</script>
+
+</body>
+</html>

@@ -13,8 +13,13 @@ five roles that second factor can play.
 - `confounder_collider_minimal.py` — minimal runnable script trimmed to the two roles
   that invert: `F1` as a confounder (must control) and as a collider (must not). Each
   case reports the omit and control loadings against the population closed form.
-- `explainer_causal_factors_two_factor.html` — interactive widget: flip `F1` between
-  confounder and collider, tick the control on or off, and watch the verdict invert.
+- `explainer_causal_factors_two_factor.html` — interactive widget (bar chart): flip `F1`
+  between confounder and collider, tick the control on or off, and watch the verdict invert.
+- `explainer_causal_factors_two_factor_scatter.html` — the same widget rendered as a scatter
+  of a sample (n = 1200, seed 42) with two slope lines: the dashed green true-effect slope `β`
+  and the solid OLS-fit slope. Ticking the control switches to an added-variable
+  (partial-regression) plot, so the controlled coefficient is shown honestly as the slope
+  through the residual cloud.
 
 ## Run
 
