@@ -4,6 +4,19 @@ A self-contained pedagogical notebook on factor model misspecification: what hap
 to a factor loading when you omit versus control for a second factor `F1`, across the
 five roles that second factor can play.
 
+## View the widgets (live, in the browser)
+
+Both HTML files are self-contained (inline CSS and JavaScript, no dependencies), so they
+render live through htmlpreview without any setup:
+
+- [Bar-chart widget](https://htmlpreview.github.io/?https://github.com/codetasks/causal-misspecification-example/blob/main/explainer_causal_factors_two_factor.html)
+  — true effect vs OLS estimate as two bars.
+- [Scatter widget](https://htmlpreview.github.io/?https://github.com/codetasks/causal-misspecification-example/blob/main/explainer_causal_factors_two_factor_scatter.html)
+  — sample cloud with the true-effect and OLS slope lines (added-variable plot when controlling).
+
+GitHub renders raw `.html` as source, so the links above use htmlpreview to run the page.
+You can also download either file and open it directly in any browser.
+
 ## Contents
 
 - `explainer_causal_factors_two_factor.ipynb` — one control decision for a second
