@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Two factors: confounder, collider, and the controls that help or hurt</title>
+<title>Two-factor causal misspecification — interactive widget</title>
 <style>
   :root {
     --bg: #ffffff; --text: #1f1f1f; --head: #000000; --muted: #5f6368;
@@ -14,558 +14,310 @@
   html { -webkit-text-size-adjust: 100%; }
   body {
     background: var(--bg); color: var(--text);
-    font-family: "Google Sans", "Google Sans Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px; line-height: 1.6; margin: 0; padding: 0;
+    font-family: "Google Sans","Google Sans Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size: 16px; line-height: 1.6; margin: 0; padding: 40px 16px;
   }
-  .wrap { max-width: 780px; margin: 0 auto; padding: 56px 24px 96px; }
-  h1 { color: var(--head); font-weight: 700; font-size: 42px; line-height: 1.2; letter-spacing: -0.5px; margin: 0 0 12px; }
-  h2 { color: var(--head); font-weight: 600; font-size: 29px; line-height: 1.25; margin: 64px 0 16px; }
-  h3 { color: var(--head); font-weight: 600; font-size: 21px; line-height: 1.3; margin: 40px 0 10px; }
-  p { margin: 0 0 16px; }
-  .lead { font-size: 18px; color: var(--muted); margin: 0 0 8px; }
-  .meta { font-size: 14px; color: var(--muted); margin: 0 0 40px; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { color: var(--accent-hover); text-decoration: underline; }
-  code { font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14.5px; background: #f8f9fa; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
-  .eq { font-family: "Times New Roman", Georgia, serif; font-size: 22px; text-align: center; color: var(--head); background: #f8f9fa; border: 1px solid var(--border); border-radius: 4px; padding: 22px 16px; margin: 24px 0; }
-  .eq .small { font-size: 16px; color: var(--muted); }
-  var { font-style: italic; }
-  sub, sup { font-size: 0.72em; }
-  .callout { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 0 4px 4px 0; padding: 20px 24px; margin: 28px 0; background: #fbfcfe; }
-  .callout.green { border-left-color: var(--green); }
-  .callout.red { border-left-color: var(--red); }
-  .callout.yellow { border-left-color: var(--yellow); }
-  .callout .tag { font-size: 12px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
-  .grid2 { display: flex; gap: 20px; flex-wrap: wrap; margin: 28px 0; }
-  .card { flex: 1 1 320px; border: 1px solid var(--border); border-radius: 4px; padding: 24px; }
-  .card h4 { margin: 0 0 4px; font-size: 16px; font-weight: 600; color: var(--head); }
-  .card .sub { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
-  svg { display: block; margin: 0 auto; }
-  .dagcap { font-size: 13px; color: var(--muted); text-align: center; margin-top: 10px; }
-  .dagrow { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; align-items: flex-start; margin: 24px 0; }
-  .dagrow figure { flex: 1 1 300px; margin: 0; }
-  .dagrow figcaption { font-size: 13px; color: var(--muted); text-align: center; margin-top: 8px; }
-  table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 15px; }
-  th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: 0.3px; }
-  td.num { font-family: "Roboto Mono", monospace; }
-  .big { font-weight: 700; }
-  .big.blue { color: var(--accent); }
-  .big.green { color: var(--green); }
-  .big.red { color: var(--red); }
-  pre { background: #f8f9fa; border: 1px solid var(--border); border-radius: 4px; padding: 18px 20px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace; margin: 24px 0; }
-  pre code { background: none; border: none; padding: 0; font-size: inherit; }
-  .cmt { color: var(--green); }
-  .kw  { color: var(--accent); }
-  hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
-  .foot { font-size: 13px; color: var(--muted); margin-top: 8px; }
-  .small { font-size: 13px; color: var(--muted); }
-  .badge { display:inline-block; font-size:11px; font-weight:600; letter-spacing:.4px; text-transform:uppercase; color:var(--green); border:1px solid var(--green); border-radius:3px; padding:1px 6px; margin-left:6px; vertical-align:middle; }
-  details { border: 1px solid var(--border); border-radius: 4px; padding: 0 20px; margin: 20px 0; }
-  details[open] { padding-bottom: 14px; }
-  summary { cursor: pointer; font-weight: 600; color: var(--head); padding: 14px 0; list-style: none; }
-  summary::-webkit-details-marker { display: none; }
-  summary::before { content: "▸ "; color: var(--accent); }
-  details[open] summary::before { content: "▾ "; }
-  .faq dt { font-weight: 600; color: var(--head); margin-top: 18px; }
-  .faq dd { margin: 4px 0 0; color: var(--text); }
+  code {
+    font-family: "Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size: 14px; background: #f8f9fa; border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px;
+  }
+  .sim {
+    border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px;
+    margin: 0 auto; width: min(94vw, 960px);
+  }
+  .sim-controls {
+    display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center;
+    margin-bottom: 16px; font-size: 13px; color: var(--muted);
+  }
+  .sim-controls label { display: flex; align-items: center; gap: 8px; }
+  .sim-controls input[type=range] { width: 96px; accent-color: var(--accent); }
+  .sim-controls .val {
+    font-family: "Roboto Mono",ui-monospace,monospace; color: var(--text);
+    min-width: 38px; text-align: right;
+  }
+  .sim-controls label.ctrl { font-weight: 600; color: var(--accent); flex-basis: 100%; }
+  .sim-stage { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+  .sim-stage .scatter-wrap { flex: 1 1 420px; min-width: 0; }
+  .sim-stage .dag-wrap { flex: 0 0 300px; }
+  #tf-bars { width: 100%; max-width: 100%; height: auto; display: block; }
+  #tf-dag {
+    width: 100%; max-width: 300px; height: auto; display: block;
+    border: 1px solid var(--border); border-radius: 4px; background: #fff;
+  }
+  .dag-title {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .4px; margin: 0 0 6px;
+  }
+  .dag-caption { font-size: 12.5px; color: var(--text); margin-top: 10px; line-height: 1.45; }
+  .sim-readout {
+    margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px;
+  }
+  .sim-readout b { font-family: "Roboto Mono",ui-monospace,monospace; }
+  .sim-legend { display: inline-flex; align-items: center; gap: 7px; }
+  .sim-legend .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .sim-lesson { margin-top: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .eqs { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+  .eqrow { display: flex; flex-direction: column; gap: 3px; }
+  .eqlab {
+    font-size: 11px; font-weight: 600; letter-spacing: .3px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .eqs code {
+    display: block; background: #f8f9fa; border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px 11px; font-size: 13px; line-height: 1.5;
+    white-space: normal;
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <h1>Two factors, one control decision</h1>
-  <p class="lead">To estimate a factor's causal loading you have to decide whether the other factor belongs in the regression. The same control can be required or forbidden, and the regression output looks identical either way. Only the causal graph settles it.</p>
-  <p class="meta">A companion to the one factor notes on <em>Causal Factor Analysis is a Necessary Condition for Investment Efficiency</em> (Lopez de Prado, Lipton, Zoonekynd, 2025). Every number is verified two ways: closed form algebra and Monte Carlo simulation at seed 42 (n up to 2 million). The estimation section is verified by a five fold cross fitted DML run.</p>
-
-  <p>The one factor note made a single point: the regression slope of a return on a factor is a causal loading only if nothing else moves both the factor and the return. Add a second factor and the question sharpens into a decision you make on every line of a factor model, usually without noticing. Does the second factor belong in the regression for the first one's loading? The honest answer is that it depends entirely on the second factor's causal role, and four roles give four different answers. As a <strong>confounder</strong> it must be included. As a <strong>collider</strong> it must be excluded. As a <strong>mediator</strong> it changes which effect you are even measuring. As a plain <strong>predictor</strong> of the return it is optional and only sharpens the estimate. This note works through all four, lets you flip between the two hardest ones and watch the verdict invert, and shows the structural equation, the causal target, and the misspecified regression for each.</p>
-
-  <p>One structure is deliberately left out. A latent driver that moves both factors but never touches the return is not a source of bias, only of correlation between the regressors. That benign case has its own section near the end, and it is the reason the confounding in this note always comes from a variable that reaches the return, never from a hidden common cause of the factors alone.</p>
-
-  <h2>Seeing versus doing, with a second factor</h2>
-
-  <p>Write <var>X</var> for the return and <var>F</var><sub>2</sub> for the factor whose loading you want. There are two quantities a regression could be after, and they are not the same number.</p>
-
-  <div class="grid2">
-    <div class="card">
-      <h4>Seeing: E[X | F<sub>2</sub> = f]</h4>
-      <p class="sub">observational, what OLS targets</p>
-      <p style="margin:0">The average return <em>among the periods where the factor happened to read f</em>. It mixes the factor's own effect with whatever else tends to travel with the factor. This is the conditional expectation a regression of <var>X</var> on <var>F</var><sub>2</sub> converges to.</p>
+<div class="sim">
+  <div class="sim-controls">
+    <label class="ctrl">F&#x2081; plays the role of:</label>
+    <label><input type="radio" name="tf-case" value="conf" checked> confounder (F&#x2081;&rarr;F&#x2082;, F&#x2081;&rarr;X)</label>
+    <label><input type="radio" name="tf-case" value="coll"> collider (F&#x2082;&rarr;F&#x2081;, X&rarr;F&#x2081;)</label>
+    <label class="ctrl"><input type="checkbox" id="p-ctl"> include F&#x2081; as a control in the regression</label>
+    <label>&#946; (F&#x2082;&rarr;X, true) <input type="range" id="p-b" min="0" max="2" step="0.05" value="1"><span class="val" id="p-b-v">1.00</span></label>
+    <label>a (F&#x2081; &harr; F&#x2082; strength) <input type="range" id="p-a" min="0" max="1.5" step="0.05" value="0.8"><span class="val" id="p-a-v">0.80</span></label>
+    <label>c (F&#x2081; &harr; X strength) <input type="range" id="p-c" min="-1" max="1.5" step="0.05" value="0.7"><span class="val" id="p-c-v">0.70</span></label>
+  </div>
+  <div class="sim-stage">
+    <div class="scatter-wrap">
+      <canvas id="tf-bars" width="460" height="300"
+        role="img" aria-label="Bars: true effect (green) vs OLS estimate of factor 2 (blue)"></canvas>
     </div>
-    <div class="card">
-      <h4>Doing: E[X | do(F<sub>2</sub> = f)]</h4>
-      <p class="sub">interventional, the causal loading</p>
-      <p style="margin:0">The average return <em>if you set the exposure to f by intervention</em> and held everything upstream fixed. The loading is the slope of this in <var>f</var>. This is the number that belongs in a portfolio optimizer, because the optimizer chooses exposures, it does not merely observe them.</p>
+    <div class="dag-wrap">
+      <div class="dag-title">Structure (live)</div>
+      <canvas id="tf-dag" width="300" height="240"
+        role="img" aria-label="Live DAG of F1 as confounder or collider of the F2 to X relationship"></canvas>
+      <div class="dag-caption" id="tf-cap"></div>
     </div>
   </div>
-
-  <p>The two agree only when no third variable creates a backdoor path between <var>F</var><sub>2</sub> and <var>X</var>. The whole job of the second factor <var>F</var><sub>1</sub> is to either open such a path, block one, or sit on the path you are trying to measure. The estimand throughout is the causal loading, the slope of the <code>do</code> expression:</p>
-
-  <div class="eq">
-    E[<var>X</var> | do(<var>F</var><sub>2</sub>=<var>f</var>)] = <var>β f</var>,&nbsp;&nbsp;&nbsp; so &part;/&part;<var>f</var> = <var>β</var>
-    <span class="badge">the target</span>
+  <div class="sim-readout">
+    <span class="sim-legend"><span class="dot" style="background:#34a853"></span>true effect &#946;: <b id="tf-true">--</b></span>
+    <span class="sim-legend"><span class="dot" style="background:#1a73e8"></span>OLS estimate of F&#x2082;: <b id="tf-est">--</b></span>
+    <span>bias: <b id="tf-bias" style="color:#ea4335">--</b></span>
+    <span>verdict: <b id="tf-verdict">--</b></span>
   </div>
-
-  <h2>F<sub>1</sub> as a confounder: the control you must keep</h2>
-
-  <p>Suppose the second factor is a common cause of the first factor and the return. A macro regime that drives a value tilt and independently drives realized returns is the textbook case. In structural form, with all idiosyncratic terms independent and mean zero:</p>
-
-  <div class="eq" style="font-size:18px">
-    <var>F</var><sub>1</sub> = <var>η</var><sub>1</sub>,&nbsp;&nbsp;
-    <var>F</var><sub>2</sub> = <var>a</var><var>F</var><sub>1</sub> + <var>η</var><sub>2</sub>,&nbsp;&nbsp;
-    <var>X</var> = <var>β</var><var>F</var><sub>2</sub> + <var>c</var><var>F</var><sub>1</sub> + <var>ε</var>
-  </div>
-
-  <p>The causal loading of <var>X</var> on <var>F</var><sub>2</sub> is <var>β</var>. There is one backdoor path, <var>F</var><sub>2</sub> &larr; <var>F</var><sub>1</sub> &rarr; <var>X</var>, and it is open whenever <var>F</var><sub>1</sub> is left out. Regress <var>X</var> on <var>F</var><sub>2</sub> alone and the slope converges not to <var>β</var> but to</p>
-
-  <div class="eq">
-    plim <var>β&#770;</var><sub>F<sub>2</sub> only</sub> = <var>β</var> + <span style="display:inline-block;text-align:center"><span style="border-bottom:1px solid">&nbsp;<var>a c</var>&nbsp;</span><br><span><var>a</var><sup>2</sup> + 1</span></span>
-    <span class="badge">verified &times;2</span>
-  </div>
-
-  <details>
-    <summary>Where the bias term comes from (omitted variable formula)</summary>
-    <p>Substitute the factor equation into the return: <var>X</var> = <var>β</var>(<var>aF</var><sub>1</sub>+<var>η</var><sub>2</sub>) + <var>cF</var><sub>1</sub> + <var>ε</var> = (<var>βa</var>+<var>c</var>)<var>F</var><sub>1</sub> + <var>βη</var><sub>2</sub> + <var>ε</var>. With unit variances for <var>F</var><sub>1</sub> and <var>η</var><sub>2</sub>, Cov(<var>F</var><sub>2</sub>, <var>X</var>) = <var>a</var>(<var>βa</var>+<var>c</var>) + <var>β</var> and Var(<var>F</var><sub>2</sub>) = <var>a</var><sup>2</sup>+1. The single regressor slope is their ratio, which simplifies to <var>β</var> + <var>ac</var>/(<var>a</var><sup>2</sup>+1). The bias is the classic <em>omitted coefficient times the regression of the omitted control on the included one</em>: here <var>c</var> times <var>a</var>/(<var>a</var><sup>2</sup>+1).</p>
-  </details>
-
-  <p>The fix is the backdoor adjustment. Setting <var>F</var><sub>2</sub> by intervention deletes its equation; the remaining path through <var>F</var><sub>1</sub> is closed once <var>F</var><sub>1</sub> is in the regression, because <var>F</var><sub>1</sub> is then held fixed. Including it returns the exact coefficient, <var>β</var>. At <var>β</var> = 1.0, <var>a</var> = 0.8, <var>c</var> = 0.7:</p>
-
-  <table>
-    <thead><tr><th>Specification</th><th>slope on F<sub>2</sub></th><th>reading</th></tr></thead>
-    <tbody>
-      <tr><td>omit F<sub>1</sub> (backdoor open)</td><td class="num big blue">1.341</td><td>biased by a&middot;c/(a&sup2;+1) = 0.341</td></tr>
-      <tr><td>control F<sub>1</sub> (backdoor closed)</td><td class="num big green">1.000</td><td>the causal loading</td></tr>
-    </tbody>
-  </table>
-
-  <p class="small">Monte Carlo at seed 42 (n = 2 million) returns 1.341 omitting and 1.000 controlling, matching the closed form. Here the omitted control belongs in the model.</p>
-
-  <h2>F<sub>1</sub> as a collider: the control you must drop</h2>
-
-  <p>Now flip the arrows. Suppose the second factor is a common <em>effect</em> of the first factor and the return rather than a cause. An analyst rating that rises both with the factor exposure and with the realized return is the canonical example: it is downstream of both, not upstream. In structural form:</p>
-
-  <div class="eq" style="font-size:18px">
-    <var>F</var><sub>2</sub> = <var>η</var><sub>2</sub>,&nbsp;&nbsp;
-    <var>X</var> = <var>β</var><var>F</var><sub>2</sub> + <var>ε</var>,&nbsp;&nbsp;
-    <var>F</var><sub>1</sub> = <var>a</var><var>F</var><sub>2</sub> + <var>c</var><var>X</var> + <var>η</var><sub>1</sub>
-  </div>
-
-  <p>Here there is no backdoor at all: <var>F</var><sub>2</sub> is exogenous, so regressing <var>X</var> on <var>F</var><sub>2</sub> alone recovers <var>β</var> directly. The trap is the opposite of before. Adding <var>F</var><sub>1</sub> as a control conditions on a common effect of <var>F</var><sub>2</sub> and <var>X</var>, which opens a non causal path between them and biases the slope.</p>
-
-  <details>
-    <summary>Why conditioning on a collider induces a spurious slope</summary>
-    <p>A collider is a node with two arrows into it. <var>F</var><sub>1</sub> &larr; <var>F</var><sub>2</sub> and <var>F</var><sub>1</sub> &larr; <var>X</var> meet at <var>F</var><sub>1</sub>, so the path <var>F</var><sub>2</sub> &rarr; <var>F</var><sub>1</sub> &larr; <var>X</var> is blocked by default. Conditioning on the collider unblocks it: once you know <var>F</var><sub>1</sub>, a high <var>F</var><sub>2</sub> implies a low <var>X</var> is needed to explain the same <var>F</var><sub>1</sub>, manufacturing a negative association that was never causal. Algebraically the two regressor OLS coefficient on <var>F</var><sub>2</sub> is (Vf&#8321;&middot;<var>β</var> &minus; <var>p</var>&middot;Cov(F<sub>1</sub>,X)) / det, with <var>p</var> = <var>a</var>+<var>cβ</var>, det = <var>c</var><sup>2</sup>+1, which is not <var>β</var> unless <var>a</var> = <var>c</var> = 0.</p>
-  </details>
-
-  <table>
-    <thead><tr><th>Specification</th><th>slope on F<sub>2</sub></th><th>reading</th></tr></thead>
-    <tbody>
-      <tr><td>omit F<sub>1</sub> (collider closed)</td><td class="num big green">1.000</td><td>the causal loading</td></tr>
-      <tr><td>control F<sub>1</sub> (collider opened)</td><td class="num big red">0.296</td><td>biased toward zero and beyond</td></tr>
-    </tbody>
-  </table>
-
-  <p class="small">Monte Carlo at seed 42 returns 1.000 omitting and 0.296 controlling, matching the closed form. Here the added control wrecks an estimate that was already correct.</p>
-
-  <div class="callout">
-    <p class="tag">the point</p>
-    <p style="margin:0">Compare the two tables. The confounder case is fixed by adding <var>F</var><sub>1</sub>; the collider case is broken by adding <var>F</var><sub>1</sub>. The action is identical, the data can be made to show the same correlations, and the regression diagnostics (fit, t statistics, residuals) look healthy in both. What separates them is the direction of the arrows touching <var>F</var><sub>1</sub>, which lives in the causal model, not in the sample.</p>
-  </div>
-
-  <h2>Play with it: the same control, opposite verdicts</h2>
-
-  <p>The widget estimates the loading of the return <var>X</var> on factor <var>F</var><sub>2</sub>, while factor <var>F</var><sub>1</sub> is a candidate control whose causal role you choose. Pick the role, tick or untick the control, and read three things below the chart: the structural equations, the causal target from the <code>do</code> operator, and the observational regression you actually run, flagged green when it is correctly specified and red when it is misspecified. The numbers are population probability limits in closed form, no sampling. Flip the case and the control and watch the verdict invert.</p>
-
-  <div class="sim">
-    <div class="sim-controls">
-      <label class="ctrl">F₁ plays the role of:</label>
-      <label><input type="radio" name="tf-case" value="conf" checked> confounder (F₁&rarr;F₂, F₁&rarr;X)</label>
-      <label><input type="radio" name="tf-case" value="coll"> collider (F₂&rarr;F₁, X&rarr;F₁)</label>
-      <label class="ctrl"><input type="checkbox" id="p-ctl"> include F₁ as a control in the regression</label>
-      <label>β (F₂&rarr;X, true) <input type="range" id="p-b" min="0" max="2" step="0.05" value="1"><span class="val" id="p-b-v">1.00</span></label>
-      <label>a (F₁ &harr; F₂ strength) <input type="range" id="p-a" min="0" max="1.5" step="0.05" value="0.8"><span class="val" id="p-a-v">0.80</span></label>
-      <label>c (F₁ &harr; X strength) <input type="range" id="p-c" min="-1" max="1.5" step="0.05" value="0.7"><span class="val" id="p-c-v">0.70</span></label>
-    </div>
-    <div class="sim-stage">
-      <div class="scatter-wrap">
-        <canvas id="tf-bars" width="460" height="300" role="img" aria-label="Bars: true effect (green) vs OLS estimate of factor 2 (blue)"></canvas>
-      </div>
-      <div class="dag-wrap">
-        <div class="dag-title">Structure (live)</div>
-        <canvas id="tf-dag" width="300" height="240" role="img" aria-label="Live DAG of F1 as confounder or collider of the F2 to X relationship"></canvas>
-        <div class="dag-caption" id="tf-cap"></div>
-      </div>
-    </div>
-    <div class="sim-readout">
-      <span class="sim-legend"><span class="dot" style="background:#34a853"></span>true effect β: <b id="tf-true">--</b></span>
-      <span class="sim-legend"><span class="dot" style="background:#1a73e8"></span>OLS estimate of F₂: <b id="tf-est">--</b></span>
-      <span>bias: <b id="tf-bias" style="color:#ea4335">--</b></span>
-      <span>verdict: <b id="tf-verdict">--</b></span>
-    </div>
-    <p class="sim-lesson" id="tf-lesson"></p>
-    <div class="eqs" id="tf-eqs"></div>
-  </div>
-
-  <style>
-    .sim { border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px; margin: 24px 0; width: min(94vw, 960px); position: relative; left: 50%; transform: translateX(-50%); }
-    .sim-controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; margin-bottom: 16px; font-size: 13px; color: var(--muted); }
-    .sim-controls label { display: flex; align-items: center; gap: 8px; }
-    .sim-controls input[type=range] { width: 96px; accent-color: var(--accent); }
-    .sim-controls .val { font-family: "Roboto Mono", ui-monospace, monospace; color: var(--text); min-width: 38px; text-align: right; }
-    .sim-controls label.ctrl { font-weight: 600; color: var(--accent); flex-basis: 100%; }
-    .sim-stage { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
-    .sim-stage .scatter-wrap { flex: 1 1 420px; min-width: 0; }
-    .sim-stage .dag-wrap { flex: 0 0 300px; }
-    #tf-bars { width: 100%; max-width: 100%; height: auto; display: block; }
-    #tf-dag { width: 100%; max-width: 300px; height: auto; display: block; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
-    .dag-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin: 0 0 6px; }
-    .dag-caption { font-size: 12.5px; color: var(--text); margin-top: 10px; line-height: 1.45; }
-    .sim-readout { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; }
-    .sim-readout b { font-family: "Roboto Mono", ui-monospace, monospace; }
-    .sim-legend { display: inline-flex; align-items: center; gap: 7px; }
-    .sim-legend .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
-    .sim-lesson { margin-top: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
-    .eqs { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
-    .eqrow { display: flex; flex-direction: column; gap: 3px; }
-    .eqlab { font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--muted); }
-    .eqs code { display: block; background: #f8f9fa; border: 1px solid var(--border); border-radius: 4px; padding: 8px 11px; font-size: 13px; line-height: 1.5; white-space: normal; }
-  </style>
-
-  <script>
-  (function () {
-    var bars = document.getElementById('tf-bars');
-    if (!bars || !bars.getContext) return;
-    var bctx = bars.getContext('2d');
-    var dg = document.getElementById('tf-dag');
-    var dctx = (dg && dg.getContext) ? dg.getContext('2d') : null;
-    function val(id) { return parseFloat(document.getElementById(id).value); }
-    function setT(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
-    function ctl() { return document.getElementById('p-ctl').checked; }
-    function caseSel() { return document.querySelector('input[name="tf-case"]:checked').value; }
-
-    // Population OLS probability limit for the coefficient on F2.
-    // All exogenous variables and noises have unit variance.
-    function estimate(cse, control, b, a, c) {
-      if (cse === 'conf') {
-        // F1 exogenous; F2 = a F1 + e2; X = b F2 + c F1 + ex
-        return control ? b : b + a * c / (a * a + 1);
-      }
-      // collider: F2 exogenous; X = b F2 + ex; F1 = a F2 + c X + e1
-      if (!control) return b;
-      var p = a + c * b, Vf1 = p * p + c * c + 1, det = c * c + 1;
-      var s0 = b, s1 = b * a + c * (b * b + 1); // Sigma_RX = [Cov(F2,X), Cov(F1,X)]
-      return (Vf1 * s0 - p * s1) / det;          // 2x2 OLS coefficient on F2
-    }
-
-    function compute() {
-      var b = val('p-b'), a = val('p-a'), c = val('p-c');
-      var cse = caseSel(), control = ctl();
-      var est = estimate(cse, control, b, a, c);
-      return { b: b, a: a, c: c, cse: cse, control: control, est: est, bias: est - b, correct: Math.abs(est - b) < 1e-9 };
-    }
-
-    function lesson(c) {
-      if (c.cse === 'conf') {
-        return c.control
-          ? 'F₁ is a confounder and you controlled for it. The backdoor F₂ ← F₁ → X is closed, so the estimate lands on the true effect. Controlling is the right call.'
-          : 'F₁ is a confounder left out of the regression. The open backdoor F₂ ← F₁ → X biases the estimate by a·c/(a²+1). You must control for it.';
-      }
-      return c.control
-        ? 'F₁ is a collider and you controlled for it. Conditioning on a common effect of F₂ and X opens the spurious path F₂ → F₁ ← X and biases the estimate. You must NOT control for it.'
-        : 'F₁ is a collider left out of the regression. The path F₂ → F₁ ← X is closed at the collider, so the estimate is the true effect. Leaving it out is the right call.';
-    }
-
-    function renderEqs(c) {
-      var el = document.getElementById('tf-eqs'); if (!el) return;
-      var b = c.b.toFixed(2), a = c.a.toFixed(2), cc = c.c.toFixed(2), est = c.est.toFixed(2);
-      var bs = (c.bias >= 0 ? '+' : '') + c.bias.toFixed(2);
-      var doeq = 'E[X | do(F₂=f)] = β·f = ' + b + '·f';
-      var scm, obsLab, obs, col;
-      if (c.cse === 'conf') {
-        scm = 'F₁ = η₁   ;   F₂ = ' + a + '·F₁ + η₂   ;   X = ' + b + '·F₂ + ' + cc + '·F₁ + ε';
-        if (c.control) {
-          obsLab = 'Observational, F₁ in the model (correctly specified)';
-          obs = 'E[X | F₂=f, F₁] = ' + b + '·f + ' + cc + '·F₁   →   slope on F₂ = ' + b + ' = β';
-          col = '#34a853';
-        } else {
-          obsLab = 'Observational, F₁ omitted (misspecified)';
-          obs = 'E[X | F₂=f] = (β + a·c/(a²+1))·f = ' + est + '·f   →   slope on F₂ biased by ' + bs;
-          col = '#ea4335';
-        }
-      } else {
-        scm = 'F₂ = η₂   ;   X = ' + b + '·F₂ + ε   ;   F₁ = ' + a + '·F₂ + ' + cc + '·X + η₁';
-        if (c.control) {
-          obsLab = 'Observational, F₁ in the model (misspecified: conditions on a collider)';
-          obs = 'E[X | F₂=f, F₁]   →   slope on F₂ = ' + est + '   →   biased by ' + bs;
-          col = '#ea4335';
-        } else {
-          obsLab = 'Observational, F₁ omitted (correctly specified)';
-          obs = 'E[X | F₂=f] = ' + b + '·f   →   slope on F₂ = ' + b + ' = β';
-          col = '#34a853';
-        }
-      }
-      el.innerHTML =
-        '<div class="eqrow"><span class="eqlab">Structural causal model</span><code>' + scm + '</code></div>' +
-        '<div class="eqrow"><span class="eqlab">Causal target (do-calculus, what you want)</span><code>' + doeq + '</code></div>' +
-        '<div class="eqrow"><span class="eqlab" style="color:' + col + '">' + obsLab + '</span><code style="border-color:' + col + '">' + obs + '</code></div>';
-    }
-
-    function draw() {
-      setT('p-b-v', val('p-b').toFixed(2));
-      setT('p-a-v', val('p-a').toFixed(2));
-      setT('p-c-v', val('p-c').toFixed(2));
-      var c = compute();
-      setT('tf-true', c.b.toFixed(3));
-      setT('tf-est', c.est.toFixed(3));
-      setT('tf-bias', (c.bias >= 0 ? '+' : '') + c.bias.toFixed(3));
-      var v = document.getElementById('tf-verdict');
-      if (v) { v.textContent = c.correct ? 'identified ✓' : 'biased ✗'; v.style.color = c.correct ? '#34a853' : '#ea4335'; }
-      setT('tf-lesson', lesson(c));
-      renderBars(c);
-      renderDAG(c);
-      renderEqs(c);
-    }
-
-    function renderBars(c) {
-      var W = bars.width, H = bars.height, mT = 24, mB = 38, mL = 46, mR = 12;
-      bctx.clearRect(0, 0, W, H);
-      var lo = Math.min(-0.4, c.est, c.b) - 0.15;
-      var hi = Math.max(2, Math.abs(c.est), c.b) * 1.1;
-      function sy(v) { return H - mB - (v - lo) / (hi - lo) * (H - mT - mB); }
-      bctx.strokeStyle = '#e8eaed'; bctx.lineWidth = 1;
-      bctx.beginPath(); bctx.moveTo(mL, mT); bctx.lineTo(mL, H - mB); bctx.stroke();
-      bctx.strokeStyle = '#dadce0';
-      bctx.beginPath(); bctx.moveTo(mL, sy(0)); bctx.lineTo(W - mR, sy(0)); bctx.stroke();
-      bctx.fillStyle = '#5f6368'; bctx.font = '11px monospace'; bctx.textAlign = 'right';
-      bctx.fillText('0', mL - 6, sy(0) + 3);
-      var groups = [{ lab: 'true effect β', col: '#34a853', v: c.b }, { lab: 'OLS estimate', col: c.correct ? '#34a853' : '#1a73e8', v: c.est }];
-      var gw = (W - mL - mR) / 2, bw = 72;
-      groups.forEach(function (grp, i) {
-        var cx = mL + gw * i + gw / 2, y0 = sy(0), yv = sy(grp.v);
-        bctx.fillStyle = grp.col;
-        bctx.fillRect(cx - bw / 2, Math.min(yv, y0), bw, Math.abs(yv - y0));
-        bctx.fillStyle = '#1f1f1f'; bctx.font = 'bold 13px monospace'; bctx.textAlign = 'center';
-        bctx.fillText(grp.v.toFixed(2), cx, grp.v >= 0 ? yv - 5 : yv + 14);
-        bctx.fillStyle = '#5f6368'; bctx.font = '13px -apple-system, Arial, sans-serif';
-        bctx.fillText(grp.lab, cx, H - mB + 18);
-      });
-    }
-
-    function arrow(x1, y1, x2, y2, color, blocked, label, lx, ly) {
-      if (!dctx) return;
-      var ang = Math.atan2(y2 - y1, x2 - x1);
-      dctx.strokeStyle = color; dctx.fillStyle = color; dctx.lineWidth = 2;
-      dctx.setLineDash(blocked ? [5, 4] : []);
-      dctx.beginPath(); dctx.moveTo(x1, y1); dctx.lineTo(x2, y2); dctx.stroke();
-      dctx.setLineDash([]);
-      dctx.beginPath(); dctx.moveTo(x2, y2);
-      dctx.lineTo(x2 - 9 * Math.cos(ang - 0.4), y2 - 9 * Math.sin(ang - 0.4));
-      dctx.lineTo(x2 - 9 * Math.cos(ang + 0.4), y2 - 9 * Math.sin(ang + 0.4));
-      dctx.closePath(); dctx.fill();
-      if (blocked) {
-        var mx = (x1 + x2) / 2, my = (y1 + y2) / 2, p = ang + Math.PI / 2, L = 6;
-        dctx.strokeStyle = '#202124'; dctx.lineWidth = 2.5;
-        dctx.beginPath(); dctx.moveTo(mx - Math.cos(p) * L, my - Math.sin(p) * L); dctx.lineTo(mx + Math.cos(p) * L, my + Math.sin(p) * L); dctx.stroke();
-      }
-      if (label) { dctx.fillStyle = color; dctx.font = 'italic 12px Georgia, serif'; dctx.textAlign = 'center'; dctx.fillText(label, lx, ly); }
-    }
-    function node(x, y, label, boxed, color) {
-      if (!dctx) return;
-      if (boxed) { dctx.strokeStyle = '#202124'; dctx.lineWidth = 2; dctx.setLineDash([3, 2]); dctx.strokeRect(x - 26, y - 26, 52, 52); dctx.setLineDash([]); }
-      dctx.beginPath(); dctx.arc(x, y, 19, 0, 6.2832); dctx.fillStyle = '#fff'; dctx.fill();
-      dctx.strokeStyle = color; dctx.lineWidth = 2; dctx.stroke();
-      dctx.fillStyle = '#202124'; dctx.font = 'italic 14px Georgia, serif'; dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
-      dctx.fillText(label, x, y); dctx.textBaseline = 'alphabetic';
-    }
-    function renderDAG(c) {
-      if (!dctx) return;
-      var W = dg.width, H = dg.height;
-      dctx.clearRect(0, 0, W, H);
-      var RED = '#ea4335', GREEN = '#34a853', GREY = '#9aa0a6';
-      var box = c.control;
-      // F1 top(150,44), F2 lower-left(60,172), X lower-right(240,172)
-      // the causal effect F2 -> X is always present, green
-      arrow(80, 172, 220, 172, GREEN, false, 'β', 150, 164);
-      if (c.cse === 'conf') {
-        var col = box ? GREY : RED;                       // backdoor: red if open, grey-dashed if controlled
-        arrow(136, 56, 74, 158, col, box, 'a', 88, 108);
-        arrow(164, 56, 226, 158, col, box, 'c', 212, 108);
-      } else {
-        var col2 = box ? RED : GREY;                       // collider edges: red only when conditioned
-        arrow(74, 158, 136, 56, col2, false, 'a', 88, 108);
-        arrow(226, 158, 164, 56, col2, false, 'c', 212, 108);
-        if (box) {                                         // induced spurious association F2 ~ X
-          dctx.strokeStyle = RED; dctx.setLineDash([4, 4]); dctx.lineWidth = 2;
-          dctx.beginPath(); dctx.moveTo(72, 188); dctx.bezierCurveTo(120, 222, 180, 222, 228, 188); dctx.stroke();
-          dctx.setLineDash([]);
-          dctx.fillStyle = RED; dctx.font = 'italic 11px Georgia, serif'; dctx.textAlign = 'center';
-          dctx.fillText('spurious', 150, 214);
-        }
-      }
-      node(60, 172, 'F₂', false, '#1a73e8');
-      node(240, 172, 'X', false, '#202124');
-      node(150, 44, 'F₁', box, box ? '#202124' : '#1a73e8');
-      var cap = document.getElementById('tf-cap');
-      if (!cap) return;
-      if (c.cse === 'conf') {
-        cap.innerHTML = box
-          ? '<b style="color:#34a853">Backdoor closed.</b> F₁ (boxed) is controlled, so F₂ &larr; F₁ &rarr; X is blocked and the F₂ loading is identified.'
-          : '<b style="color:#ea4335">Open backdoor.</b> F₁ is an uncontrolled common cause of F₂ and X, so the F₂ estimate is biased.';
-      } else {
-        cap.innerHTML = box
-          ? '<b style="color:#ea4335">Collider opened.</b> Conditioning on F₁ (boxed) links F₂ and X spuriously, biasing the estimate.'
-          : '<b style="color:#34a853">Collider closed.</b> F₁ is a common effect left out, so no path opens and the F₂ estimate is clean.';
-      }
-    }
-
-    document.querySelectorAll('input[name="tf-case"]').forEach(function (r) { r.addEventListener('change', draw); });
-    document.getElementById('p-ctl').addEventListener('change', draw);
-    ['p-b', 'p-a', 'p-c'].forEach(function (id) { document.getElementById(id).addEventListener('input', draw); });
-    draw();
-  })();
-  </script>
-
-  <h2>Two more roles: mediator and neutral predictor</h2>
-
-  <p>Confounder and collider are the two cases the widget toggles because they invert. Two more complete the map, and both are common in factor work.</p>
-
-  <div class="callout red">
-    <span class="tag" style="color:var(--red)">mediator &middot; controlling changes the estimand</span>
-    <p style="margin:0">Suppose the chain is <var>F</var><sub>2</sub> &rarr; <var>F</var><sub>1</sub> &rarr; <var>X</var>: the factor moves a second factor, which in turn moves the return. With <var>F</var><sub>1</sub> = 0.7<var>F</var><sub>2</sub> + noise and <var>X</var> = 0.6<var>F</var><sub>2</sub> + 0.5<var>F</var><sub>1</sub> + noise, regressing <var>X</var> on <var>F</var><sub>2</sub> alone recovers the <strong>total</strong> effect 0.6 + 0.5&middot;0.7 = 0.95 (simulated 0.950). Add <var>F</var><sub>1</sub> as a control and you get the <strong>direct</strong> effect only, 0.600, because conditioning on the mediator removes the part of <var>F</var><sub>2</sub>'s effect that flows through it. Neither is wrong, but they answer different questions. If the optimizer chooses total exposure to <var>F</var><sub>2</sub>, the total effect is the loading you want, and controlling for the mediator is the bad move. <span class="badge">verified</span></p>
-  </div>
-
-  <div class="callout green">
-    <span class="tag" style="color:var(--green)">neutral predictor &middot; optional, sharpens the estimate</span>
-    <p style="margin:0">Suppose <var>F</var><sub>1</sub> affects the return but is unrelated to <var>F</var><sub>2</sub>: <var>X</var> = <var>β</var><var>F</var><sub>2</sub> + 0.8<var>F</var><sub>1</sub> + noise with <var>F</var><sub>1</sub> independent of <var>F</var><sub>2</sub>. Now <var>F</var><sub>1</sub> is neither a confounder nor a collider, so leaving it in or out gives the same unbiased loading on <var>F</var><sub>2</sub> (1.000 either way). Including it is still worth doing: it soaks up return variance that would otherwise sit in the residual, shrinking the standard error on <var>β</var> by a factor of &radic;(1 + 0.8<sup>2</sup>) = 1.28 in this example (simulated SE ratio 1.28). This is the one kind of extra control that is free: it cannot bias the loading and it tightens the interval. <span class="badge">verified</span></p>
-  </div>
-
-  <h2>A hidden driver that never touches the return is harmless</h2>
-
-  <p>It is tempting to treat any latent common driver of two factors as a threat. It is not, as long as the driver does not also move the return. Let an unobserved <var>U</var> (a macro regime, a crowding wave) drive both factors but leave the return equation alone:</p>
-
-  <div class="eq" style="font-size:18px">
-    <var>F</var><sub>1</sub> = <var>γ</var><sub>1</sub><var>U</var> + <var>η</var><sub>1</sub>,&nbsp;&nbsp;
-    <var>F</var><sub>2</sub> = <var>γ</var><sub>2</sub><var>U</var> + <var>η</var><sub>2</sub>,&nbsp;&nbsp;
-    <var>X</var> = <var>β</var><sub>1</sub><var>F</var><sub>1</sub> + <var>β</var><sub>2</sub><var>F</var><sub>2</sub> + <var>ε</var>
-    <span class="small">(no <var>U</var> term in X)</span>
-  </div>
-
-  <p>Because <var>U</var> reaches <var>X</var> only through the two factors, and the factors are themselves the regressors, there is no open backdoor. The multivariate regression of <var>X</var> on (<var>F</var><sub>1</sub>, <var>F</var><sub>2</sub>) recovers the true loadings exactly. At <var>γ</var> = (0.8, 0.4), <var>β</var> = (1.0, 0.5), the OLS estimate is (1.000, 0.500) even though <var>U</var> makes the two factors correlated, with corr(<var>F</var><sub>1</sub>, <var>F</var><sub>2</sub>) = 0.23. <span class="badge">verified</span></p>
-
-  <p>The only cost of <var>U</var> here is collinearity between the regressors, which inflates the variance of the loadings (the standard variance inflation factor), but leaves them unbiased. This is exactly the case this note leaves out of the confounding story: a driver of the factors that stops short of the return is a precision problem, not an identification problem. Confounding requires a path into the return. That is why every biased case above involves a variable that reaches <var>X</var>.</p>
-
-  <h2>The full map of good and bad controls</h2>
-
-  <p>Five structures, one decision each. The role is a property of the causal graph; the regression fit is the same across the first four rows and cannot tell them apart.</p>
-
-  <table>
-    <thead><tr><th>F<sub>1</sub>'s role</th><th>graph around F<sub>1</sub></th><th>put F<sub>1</sub> in the regression?</th><th>why</th></tr></thead>
-    <tbody>
-      <tr><td>confounder</td><td class="num">F<sub>2</sub> &larr; F<sub>1</sub> &rarr; X</td><td class="big green">yes</td><td>closes the backdoor; required for identification</td></tr>
-      <tr><td>collider</td><td class="num">F<sub>2</sub> &rarr; F<sub>1</sub> &larr; X</td><td class="big red">no</td><td>conditioning opens a spurious path</td></tr>
-      <tr><td>mediator</td><td class="num">F<sub>2</sub> &rarr; F<sub>1</sub> &rarr; X</td><td class="big red">no*</td><td>removes the indirect effect; keep out for the total effect</td></tr>
-      <tr><td>neutral predictor</td><td class="num">F<sub>1</sub> &rarr; X, F<sub>1</sub> &perp; F<sub>2</sub></td><td class="big green">optional</td><td>cannot bias; reduces the standard error</td></tr>
-      <tr><td>driver of factors only</td><td class="num">F<sub>1</sub> &larr; U &rarr; F<sub>2</sub>, U &#8603; X</td><td class="big">no action</td><td>collinearity, not confounding; loadings stay unbiased</td></tr>
-    </tbody>
-  </table>
-  <p class="small">* Controlling for a mediator is the correct move only if you specifically want the direct effect rather than the total effect of the factor.</p>
-
-  <h2>Estimation: recovering the loading with controls</h2>
-
-  <p>In practice the confounder is not handed to you as a single clean variable. You have the factor <var>F</var><sub>2</sub>, the return <var>X</var>, and a set of measured controls <var>W</var> (other factors, macro and liquidity series) that you hope blocks every backdoor into <var>F</var><sub>2</sub>. The estimand is the loading <var>β</var> in a partially linear model that lets the controls enter flexibly:</p>
-
-  <div class="eq" style="font-size:18px">
-    <var>X</var> = <var>β</var><var>F</var><sub>2</sub> + <var>g</var>(<var>W</var>) + <var>ε</var>,&nbsp;&nbsp;&nbsp;&nbsp; <var>F</var><sub>2</sub> = <var>m</var>(<var>W</var>) + <var>V</var>,&nbsp; E[<var>V</var>|<var>W</var>] = 0
-  </div>
-
-  <p>The debiased (Robinson partialling out) estimator residualizes the factor and the return on the controls, then regresses one residual on the other. The Neyman orthogonal moment is</p>
-
-  <div class="eq">
-    <var>ψ</var> = <var>V</var>(<var>X</var> &minus; <var>r</var>(<var>W</var>) &minus; <var>βV</var>),&nbsp;&nbsp;
-    <var>β&#770;</var> = E[<var>V</var>(<var>X</var> &minus; <var>r</var>(<var>W</var>))] / E[<var>V</var><sup>2</sup>]
-    <span class="badge">verified</span>
-    <div class="small">V = F<sub>2</sub> &minus; m(W) the factor residual, r(W) = E[X|W]; orthogonal to first order error in the nuisances m, r</div>
-  </div>
-
-  <p>The estimator uses K fold cross fitting (K = 5, repeated and median pooled): the nuisances <var>m</var> and <var>r</var> are fit on held out folds so their estimation error does not contaminate the moment. Without cross fitting the flexible machine learning error reinstates a root n bias that voids the confidence interval. The variance is the orthogonal score sandwich. When <var>F</var><sub>2</sub> is nearly explained by the controls (little independent variation left in <var>V</var>) the variance inflates, the continuous treatment analogue of an overlap failure: the data carry little information to separate the loading from the controls, and the method reports that as a wide interval rather than a false precision.</p>
-
-  <h3>The dividing line: estimation does not manufacture identification</h3>
-
-  <p>Whether this recovers the causal loading depends entirely on whether <var>W</var> actually contains the confounder. Cross fitted DML on the confounder data generating process (seed 42, n = 40,000, gradient boosted nuisances), estimating the loading on <var>F</var><sub>2</sub> with the true loading equal to 1.0:</p>
-
-  <table>
-    <thead><tr><th>Measured controls W</th><th>DML β&#770;</th><th>reading</th></tr></thead>
-    <tbody>
-      <tr><td>W contains the confounder F<sub>1</sub></td><td class="num big green">0.999</td><td>backdoor closed, recovers the loading</td></tr>
-      <tr><td>W is a noisy proxy of F<sub>1</sub></td><td class="num">1.207</td><td>partial control, still biased</td></tr>
-      <tr><td>W is irrelevant</td><td class="num big blue">1.340</td><td>the biased OLS projection</td></tr>
-    </tbody>
-  </table>
-
-  <div class="callout yellow">
-    <p class="tag" style="color:var(--yellow)">the honest caveat</p>
-    <p style="margin:0">Debiased machine learning gives valid inference on the loading <strong>only when the control set satisfies the backdoor condition</strong> that identification requires. If the true confounder is unmeasured and the controls are insufficient, DML is consistent for the partialled out projection, not for the causal loading: the orthogonal machinery makes the wrong number precise, with a tight and misleading interval. Cross fitting fixes the bias from flexible nuisances; it does nothing about an open backdoor. That is why an observational loading needs a sensitivity analysis, how strong an unmeasured confounder would have to be to overturn the sign or the ranking, before it drives a portfolio.</p>
-  </div>
-
-  <h2>Why it matters for the portfolio</h2>
-
-  <p>The factor constrained mean variance weights are <code>ω* = V&#8315;¹ B (B' V&#8315;¹ B)&#8315;¹ c'</code>, where <var>B</var> is the loading matrix, one column per factor. Feeding in the confounded loading (1.34 instead of 1.0 on <var>F</var><sub>2</sub>) corrupts every appearance of <var>B</var>. The optimizer does not merely mis size that one tilt; it mis ranks the factors, because the ratio of a biased loading to a clean one (1.34 / 0.50 = 2.68 against the causal 1.0 / 0.50 = 2.0) tells it the wrong factor is the better buy. The book tilts toward the wrong exposure, and the error is stable only while the confounder behaves as it did in the sample. Getting the loading causally right is what lets the optimizer rank and size factors the way the efficient frontier actually requires.</p>
-
-  <h2>When the loading is identified</h2>
-
-  <div class="grid2">
-    <div class="card">
-      <h4>Identified</h4>
-      <p class="sub">the do slope equals the regression slope</p>
-      <p style="margin:0">Every common cause of <var>F</var><sub>2</sub> and <var>X</var> is observed and in the control set; you do not condition on any collider or on a mediator of the effect you want; and the functional form is rich enough (here, linear) that the partialled out slope is the structural one.</p>
-    </div>
-    <div class="card">
-      <h4>Not identified</h4>
-      <p class="sub">no sample size fixes it</p>
-      <p style="margin:0">A common cause of <var>F</var><sub>2</sub> and <var>X</var> is unobserved and unproxied, or a collider sits in the control set, or the estimand is ambiguous between total and direct effect. The regression still returns a tight number; it is just the wrong one.</p>
-    </div>
-  </div>
-
-  <h2>Common confusions</h2>
-
-  <dl class="faq">
-    <dt>More controls is safer.</dt>
-    <dd>No. Each control is a separate causal decision. Adding a collider or a mediator makes a correct estimate wrong. The kitchen sink regression is not conservative; it is a bet that none of the included variables is a collider or a mediator.</dd>
-
-    <dt>A high R&sup2; means the loadings are good.</dt>
-    <dd>No. Fit measures prediction, not identification. The collider specification above can have a higher R&sup2; than the correct one while returning a loading of 0.30 instead of 1.0.</dd>
-
-    <dt>The regression can tell me whether F<sub>1</sub> is a confounder or a collider.</dt>
-    <dd>No. The confounder and collider data generating processes can produce the same covariance matrix among <var>F</var><sub>1</sub>, <var>F</var><sub>2</sub>, <var>X</var>. The direction of the arrows is what differs, and it is not in the second moments the regression sees.</dd>
-
-    <dt>Collinearity is the same problem as confounding.</dt>
-    <dd>No. A driver of both factors that does not reach the return makes the factors correlated and the loadings noisy, but not biased. Confounding requires a path into the return. Collinearity is a precision problem; confounding is an identification problem.</dd>
-
-    <dt>Controlling for a variable always reduces bias.</dt>
-    <dd>No. It reduces bias for a confounder, introduces bias for a collider, changes the estimand for a mediator, and does neither for a neutral predictor. The sign of the effect of controlling is set by the graph.</dd>
-  </dl>
-
-  <h2>How every number here was checked</h2>
-
-  <table>
-    <thead><tr><th>Result</th><th>value</th><th>verification</th></tr></thead>
-    <tbody>
-      <tr><td>confounder, F<sub>2</sub> alone</td><td class="num">1.341</td><td>OVB closed form &beta;+ac/(a&sup2;+1) + Monte Carlo, seed 42</td></tr>
-      <tr><td>confounder, control F<sub>1</sub></td><td class="num">1.000</td><td>backdoor adjustment + Monte Carlo</td></tr>
-      <tr><td>collider, control F<sub>1</sub></td><td class="num">0.296</td><td>2&times;2 OLS closed form + Monte Carlo</td></tr>
-      <tr><td>mediator, total vs direct</td><td class="num">0.950 / 0.600</td><td>path coefficients + Monte Carlo</td></tr>
-      <tr><td>neutral predictor, SE ratio</td><td class="num">1.28</td><td>&radic;(1+q&sup2;) + Monte Carlo standard errors</td></tr>
-      <tr><td>benign driver, loadings</td><td class="num">(1.000, 0.500)</td><td>multivariate OLS + Monte Carlo, corr 0.23</td></tr>
-      <tr><td>DML dividing line</td><td class="num">0.999 / 1.207 / 1.340</td><td>five fold cross fit, gradient boosted nuisances</td></tr>
-    </tbody>
-  </table>
-
-  <p class="meta">Scope: the closed forms are the linear case (linear structural equations, additive noise, constant loadings). The qualitative lessons, control a confounder, never a collider, mind the mediator, carry over to nonlinear and non Gaussian settings; the specific algebraic expressions do not.</p>
-
-  <hr>
-
-  <p class="foot">Two factor companion to the seeing versus doing, business, and statistician notes, and to <code>tutorial_causal_factor_necessary_condition.html</code>. Self contained, no external dependencies. Reproduce with seed 42 under <code>uv run python</code>. Identification routed through the Pearl backdoor criterion and the do operator; estimation through the Chernozhukov partially linear DML moment. Good and bad controls follow Cinelli, Forney, and Pearl (2022), "A Crash Course in Good and Bad Controls."</p>
-
+  <p class="sim-lesson" id="tf-lesson"></p>
+  <div class="eqs" id="tf-eqs"></div>
 </div>
+
+<script>
+(function () {
+  var bars = document.getElementById('tf-bars');
+  if (!bars || !bars.getContext) return;
+  var bctx = bars.getContext('2d');
+  var dg = document.getElementById('tf-dag');
+  var dctx = (dg && dg.getContext) ? dg.getContext('2d') : null;
+  function val(id) { return parseFloat(document.getElementById(id).value); }
+  function setT(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
+  function ctl() { return document.getElementById('p-ctl').checked; }
+  function caseSel() { return document.querySelector('input[name="tf-case"]:checked').value; }
+
+  // Population-limit OLS coefficient on F2. All noises have unit variance.
+  // Confounder: F1=eta1, F2=a*F1+eta2, X=b*F2+c*F1+eps
+  //   plim omit F1  = b + a*c/(a^2+1)
+  //   plim incl F1  = b  (exact)
+  // Collider: F2=eta2, X=b*F2+eps, F1=a*F2+c*X+eta1
+  //   plim omit F1  = b  (F2 exogenous, no backdoor)
+  //   plim incl F1  = (b - a*c)/(c^2+1)  [SymPy-verified exact closed form]
+  function estimate(cse, control, b, a, c) {
+    if (cse === 'conf') {
+      return control ? b : b + a * c / (a * a + 1);
+    }
+    if (!control) return b;
+    return (b - a * c) / (c * c + 1);
+  }
+
+  function compute() {
+    var b = val('p-b'), a = val('p-a'), c = val('p-c');
+    var cse = caseSel(), control = ctl();
+    var est = estimate(cse, control, b, a, c);
+    return { b: b, a: a, c: c, cse: cse, control: control, est: est,
+             bias: est - b, correct: Math.abs(est - b) < 1e-9 };
+  }
+
+  function lesson(c) {
+    if (c.cse === 'conf') {
+      return c.control
+        ? 'F₁ is a confounder and you controlled for it. The backdoor F₂ ← F₁ → X is closed, so the estimate lands on the true effect.'
+        : 'F₁ is a confounder left out of the regression. The open backdoor F₂ ← F₁ → X biases the estimate by a·c/(a²+1). You must control for it.';
+    }
+    return c.control
+      ? 'F₁ is a collider and you controlled for it. Conditioning on a common effect of F₂ and X opens the spurious path F₂ → F₁ ← X and biases the estimate. You must NOT control for it.'
+      : 'F₁ is a collider left out of the regression. The path F₂ → F₁ ← X is closed at the collider, so the estimate is the true effect.';
+  }
+
+  function renderEqs(c) {
+    var el = document.getElementById('tf-eqs'); if (!el) return;
+    var b = c.b.toFixed(2), a = c.a.toFixed(2), cc = c.c.toFixed(2), est = c.est.toFixed(3);
+    var bs = (c.bias >= 0 ? '+' : '') + c.bias.toFixed(3);
+    var doeq = 'E[X | do(F₂=f)] = β·f = ' + b + '·f';
+    var scm, obsLab, obs, col;
+    if (c.cse === 'conf') {
+      scm = 'F₁ = η₁   ;   F₂ = ' + a + '·F₁ + η₂   ;   X = ' + b + '·F₂ + ' + cc + '·F₁ + ε';
+      if (c.control) {
+        obsLab = 'Observational, F₁ in the model (correctly specified)';
+        obs = 'E[X | F₂=f, F₁] = ' + b + '·f + ' + cc + '·F₁   →   slope on F₂ = ' + b + ' = β';
+        col = '#34a853';
+      } else {
+        obsLab = 'Observational, F₁ omitted (misspecified)';
+        obs = 'E[X | F₂=f] = (β + a·c/(a²+1))·f = ' + est + '·f   →   slope on F₂ biased by ' + bs;
+        col = '#ea4335';
+      }
+    } else {
+      scm = 'F₂ = η₂   ;   X = ' + b + '·F₂ + ε   ;   F₁ = ' + a + '·F₂ + ' + cc + '·X + η₁';
+      if (c.control) {
+        obsLab = 'Observational, F₁ in the model (misspecified: conditions on a collider)';
+        obs = 'E[X | F₂=f, F₁]   →   slope on F₂ = ' + est + '   →   biased by ' + bs;
+        col = '#ea4335';
+      } else {
+        obsLab = 'Observational, F₁ omitted (correctly specified)';
+        obs = 'E[X | F₂=f] = ' + b + '·f   →   slope on F₂ = ' + b + ' = β';
+        col = '#34a853';
+      }
+    }
+    el.innerHTML =
+      '<div class="eqrow"><span class="eqlab">Structural causal model</span><code>' + scm + '</code></div>' +
+      '<div class="eqrow"><span class="eqlab">Causal target (do-calculus)</span><code>' + doeq + '</code></div>' +
+      '<div class="eqrow"><span class="eqlab" style="color:' + col + '">' + obsLab + '</span>' +
+      '<code style="border-color:' + col + '">' + obs + '</code></div>';
+  }
+
+  function draw() {
+    setT('p-b-v', val('p-b').toFixed(2));
+    setT('p-a-v', val('p-a').toFixed(2));
+    setT('p-c-v', val('p-c').toFixed(2));
+    var c = compute();
+    setT('tf-true', c.b.toFixed(3));
+    setT('tf-est', c.est.toFixed(3));
+    setT('tf-bias', (c.bias >= 0 ? '+' : '') + c.bias.toFixed(3));
+    var v = document.getElementById('tf-verdict');
+    if (v) { v.textContent = c.correct ? 'identified ✓' : 'biased ✗'; v.style.color = c.correct ? '#34a853' : '#ea4335'; }
+    setT('tf-lesson', lesson(c));
+    renderBars(c);
+    renderDAG(c);
+    renderEqs(c);
+  }
+
+  function renderBars(c) {
+    var W = bars.width, H = bars.height, mT = 24, mB = 38, mL = 46, mR = 12;
+    bctx.clearRect(0, 0, W, H);
+    var lo = Math.min(-0.4, c.est, c.b) - 0.15;
+    var hi = Math.max(2, Math.abs(c.est), c.b) * 1.1;
+    function sy(v) { return H - mB - (v - lo) / (hi - lo) * (H - mT - mB); }
+    bctx.strokeStyle = '#e8eaed'; bctx.lineWidth = 1;
+    bctx.beginPath(); bctx.moveTo(mL, mT); bctx.lineTo(mL, H - mB); bctx.stroke();
+    bctx.strokeStyle = '#dadce0';
+    bctx.beginPath(); bctx.moveTo(mL, sy(0)); bctx.lineTo(W - mR, sy(0)); bctx.stroke();
+    bctx.fillStyle = '#5f6368'; bctx.font = '11px monospace'; bctx.textAlign = 'right';
+    bctx.fillText('0', mL - 6, sy(0) + 3);
+    var groups = [
+      { lab: 'true effect β', col: '#34a853', v: c.b },
+      { lab: 'OLS estimate', col: c.correct ? '#34a853' : '#1a73e8', v: c.est }
+    ];
+    var gw = (W - mL - mR) / 2, bw = 72;
+    groups.forEach(function (grp, i) {
+      var cx = mL + gw * i + gw / 2, y0 = sy(0), yv = sy(grp.v);
+      bctx.fillStyle = grp.col;
+      bctx.fillRect(cx - bw / 2, Math.min(yv, y0), bw, Math.abs(yv - y0));
+      bctx.fillStyle = '#1f1f1f'; bctx.font = 'bold 13px monospace'; bctx.textAlign = 'center';
+      bctx.fillText(grp.v.toFixed(2), cx, grp.v >= 0 ? yv - 5 : yv + 14);
+      bctx.fillStyle = '#5f6368'; bctx.font = '13px -apple-system,Arial,sans-serif';
+      bctx.fillText(grp.lab, cx, H - mB + 18);
+    });
+  }
+
+  function arrow(x1, y1, x2, y2, color, blocked, label, lx, ly) {
+    if (!dctx) return;
+    var ang = Math.atan2(y2 - y1, x2 - x1);
+    dctx.strokeStyle = color; dctx.fillStyle = color; dctx.lineWidth = 2;
+    dctx.setLineDash(blocked ? [5, 4] : []);
+    dctx.beginPath(); dctx.moveTo(x1, y1); dctx.lineTo(x2, y2); dctx.stroke();
+    dctx.setLineDash([]);
+    dctx.beginPath(); dctx.moveTo(x2, y2);
+    dctx.lineTo(x2 - 9 * Math.cos(ang - 0.4), y2 - 9 * Math.sin(ang - 0.4));
+    dctx.lineTo(x2 - 9 * Math.cos(ang + 0.4), y2 - 9 * Math.sin(ang + 0.4));
+    dctx.closePath(); dctx.fill();
+    if (blocked) {
+      var mx = (x1 + x2) / 2, my = (y1 + y2) / 2, p = ang + Math.PI / 2, L = 6;
+      dctx.strokeStyle = '#202124'; dctx.lineWidth = 2.5;
+      dctx.beginPath();
+      dctx.moveTo(mx - Math.cos(p) * L, my - Math.sin(p) * L);
+      dctx.lineTo(mx + Math.cos(p) * L, my + Math.sin(p) * L);
+      dctx.stroke();
+    }
+    if (label) {
+      dctx.fillStyle = color; dctx.font = 'italic 12px Georgia,serif';
+      dctx.textAlign = 'center'; dctx.fillText(label, lx, ly);
+    }
+  }
+
+  function node(x, y, label, boxed, color) {
+    if (!dctx) return;
+    if (boxed) {
+      dctx.strokeStyle = '#202124'; dctx.lineWidth = 2; dctx.setLineDash([3, 2]);
+      dctx.strokeRect(x - 26, y - 26, 52, 52); dctx.setLineDash([]);
+    }
+    dctx.beginPath(); dctx.arc(x, y, 19, 0, 6.2832);
+    dctx.fillStyle = '#fff'; dctx.fill();
+    dctx.strokeStyle = color; dctx.lineWidth = 2; dctx.stroke();
+    dctx.fillStyle = '#202124'; dctx.font = 'italic 14px Georgia,serif';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText(label, x, y); dctx.textBaseline = 'alphabetic';
+  }
+
+  function renderDAG(c) {
+    if (!dctx) return;
+    var W = dg.width, H = dg.height;
+    dctx.clearRect(0, 0, W, H);
+    var RED = '#ea4335', GREEN = '#34a853', GREY = '#9aa0a6';
+    var box = c.control;
+    arrow(80, 172, 220, 172, GREEN, false, 'β', 150, 164);
+    if (c.cse === 'conf') {
+      var col = box ? GREY : RED;
+      arrow(136, 56, 74, 158, col, box, 'a', 88, 108);
+      arrow(164, 56, 226, 158, col, box, 'c', 212, 108);
+    } else {
+      var col2 = box ? RED : GREY;
+      arrow(74, 158, 136, 56, col2, false, 'a', 88, 108);
+      arrow(226, 158, 164, 56, col2, false, 'c', 212, 108);
+      if (box) {
+        dctx.strokeStyle = RED; dctx.setLineDash([4, 4]); dctx.lineWidth = 2;
+        dctx.beginPath();
+        dctx.moveTo(72, 188); dctx.bezierCurveTo(120, 222, 180, 222, 228, 188);
+        dctx.stroke(); dctx.setLineDash([]);
+        dctx.fillStyle = RED; dctx.font = 'italic 11px Georgia,serif';
+        dctx.textAlign = 'center'; dctx.fillText('spurious', 150, 214);
+      }
+    }
+    node(60, 172, 'F₂', false, '#1a73e8');
+    node(240, 172, 'X',   false, '#202124');
+    node(150, 44,  'F₁', box, box ? '#202124' : '#1a73e8');
+    var cap = document.getElementById('tf-cap');
+    if (!cap) return;
+    if (c.cse === 'conf') {
+      cap.innerHTML = box
+        ? '<b style="color:#34a853">Backdoor closed.</b> F₁ (boxed) is controlled, so F₂ ← F₁ → X is blocked and the F₂ loading is identified.'
+        : '<b style="color:#ea4335">Open backdoor.</b> F₁ is an uncontrolled common cause of F₂ and X, so the F₂ estimate is biased.';
+    } else {
+      cap.innerHTML = box
+        ? '<b style="color:#ea4335">Collider opened.</b> Conditioning on F₁ (boxed) links F₂ and X spuriously, biasing the estimate.'
+        : '<b style="color:#34a853">Collider closed.</b> F₁ is a common effect left out, so no path opens and the F₂ estimate is clean.';
+    }
+  }
+
+  document.querySelectorAll('input[name="tf-case"]')
+    .forEach(function (r) { r.addEventListener('change', draw); });
+  document.getElementById('p-ctl').addEventListener('change', draw);
+  ['p-b', 'p-a', 'p-c'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', draw);
+  });
+  draw();
+})();
+</script>
+
 </body>
 </html>
