@@ -98,7 +98,7 @@
   </div>
   <div class="sim-readout">
     <span class="sim-legend"><span class="bar" style="border-color:#34a853;border-top-style:dashed"></span>true effect &#946;: <b id="tf-true">--</b></span>
-    <span class="sim-legend"><span class="bar" style="border-color:#1a73e8"></span>OLS estimate of F&#x2082; (plim): <b id="tf-est">--</b></span>
+    <span class="sim-legend"><span class="bar" style="border-color:#1a73e8"></span>OLS estimate of F&#x2082;: <b id="tf-est">--</b></span>
     <span>bias: <b id="tf-bias" style="color:#ea4335">--</b></span>
     <span>verdict: <b id="tf-verdict">--</b></span>
   </div>
@@ -256,10 +256,11 @@
     var v = document.getElementById('tf-verdict');
     if (v) { v.textContent = c.correct ? 'identified ✓' : 'biased ✗'; v.style.color = c.correct ? '#34a853' : '#ea4335'; }
     setT('tf-lesson', lesson(c));
-    var sampleSlope = renderScatter(c);
-    setT('tf-note', 'Cloud: one sample of n = ' + NPTS + ' at seed 42. Dashed green line: true causal slope β = ' +
-      c.b.toFixed(2) + '. Solid line: the OLS fit to these points (slope ≈ ' + sampleSlope.toFixed(3) +
-      '), which converges to the population plim ' + c.est.toFixed(3) + ' shown above as n grows.');
+    renderScatter(c);
+    setT('tf-note', 'Cloud: one sample of n = ' + NPTS + ' at seed 42, drawn only to show the data the ' +
+      'regression sees. Dashed green line: the true causal slope β = ' + c.b.toFixed(3) + '. Solid line: ' +
+      'the OLS slope = ' + c.est.toFixed(3) + ' (the population value in the readout). Both pass through the ' +
+      'cloud centroid; the gap between them is the bias.');
     renderDAG(c);
     renderEqs(c);
   }
@@ -296,8 +297,12 @@
       pctx.lineTo(sx(xmax), sy(slope * xmax + intercept));
       pctx.stroke(); pctx.setLineDash([]);
     }
+    // Both lines pass through the cloud centroid; the gap between them is the bias.
+    // Slopes are the population (closed-form) values shown in the readout, so every
+    // "OLS estimate" in the widget is the same number. The cloud is one sample, drawn
+    // only to illustrate the data the regression sees.
     seg(c.b, f.my - c.b * f.mx, '#34a853', [7, 5]);            // true effect (dashed green)
-    seg(f.m, f.k, c.correct ? '#34a853' : '#1a73e8', []);       // OLS fit (solid)
+    seg(c.est, f.my - c.est * f.mx, c.correct ? '#34a853' : '#1a73e8', []);  // OLS (solid)
     pctx.restore();
 
     // frame
@@ -306,9 +311,9 @@
     // slope labels
     pctx.font = 'bold 12px "Roboto Mono",monospace'; pctx.textAlign = 'left';
     pctx.fillStyle = '#188038';
-    pctx.fillText('β = ' + c.b.toFixed(2), mL + 8, mT + 16);
+    pctx.fillText('β = ' + c.b.toFixed(3), mL + 8, mT + 16);
     pctx.fillStyle = c.correct ? '#188038' : '#1a73e8';
-    pctx.fillText('OLS ≈ ' + f.m.toFixed(3), mL + 8, mT + 34);
+    pctx.fillText('OLS = ' + c.est.toFixed(3), mL + 8, mT + 34);
     // axis labels
     pctx.fillStyle = '#5f6368'; pctx.font = '12px -apple-system,Arial,sans-serif'; pctx.textAlign = 'center';
     pctx.fillText(d.xlab, mL + (W - mL - mR) / 2, H - 12);
